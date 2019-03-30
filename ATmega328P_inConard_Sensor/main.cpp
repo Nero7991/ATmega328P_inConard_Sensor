@@ -12,70 +12,99 @@
 #include "NRF24L01.h"
 #include "Timer.h"
 #include "Switch.h"
-
+//extern SwitchClass Switch;
 void printSomething(uint8_t);
 void runSetup();
 void pullSlaveSelectLow(uint8_t SwitchID);
 void pullSlaveSelectHigh(uint8_t SwitchID);
 void portStateChange(uint8_t PortNo);
-volatile uint8_t SPIdata;
-volatile bool newSPIData, Timer1_Flag;
+void switchPressed(uint8_t Switch_ID);
+void timerDone(uint8_t Timer_ID);
+volatile uint8_t SPIdata, SwitchID;
+volatile bool SwitchPressedFlag, TimeOut;
 uint8_t Socket, State;
+TimerClass Timer1;
 int main(void)
 {
 	runSetup();
 	_delay_ms(500);
-	CE_D = 1;
-	CE = 0;
 	Notify(PSTR("Powering on..."));
-	//while(1);
-	NRF24L01 Radio(1,1,0);
-	//printHexNumber(Radio.readSPIRegister(0x17,1),1);
-	initSPISlave();
-	enableSPIInterrupt(true);
 	sei();
-	TimerClass Timer1;
-	SwitchClass S;
-	S.begin();
-	S.callOnPinStateChange(portStateChange);
+	TimeOut = false;
+	NRF24L01 Radio(1,1,0);
+	SwitchClass S1, S2, S3, S4, S5, S6;
 	Timer1.begin();
+	S1.begin();
+	S1.initializeSwitch(PORT_B, 1, &S1);
+	S2.initializeSwitch(PORT_B, 0, &S2);
+	S3.initializeSwitch(PORT_B, 6, &S3);
+	S4.initializeSwitch(PORT_B, 7, &S4);
+	S5.initializeSwitch(PORT_D, 6, &S5);
+	S6.initializeSwitch(PORT_D, 7, &S6);
+	S1.shortPress(switchPressed);
+	S1.enableSamePtrMode(true);
 	Timer1.initializeTimer();
-	Timer1.setCallBackTime(100, 1, printSomething);
+	Timer1.setCallBackTime(100, 0, timerDone);
 	Notify(PSTR("Done"));
+	allowSleep(true);
 	while (1)
-	{
-		if(newSPIData)	{
-			newSPIData = false;
-			if(SPIdata != 0xAA){
-				Socket = SPIdata & 0xF0;
-				Socket = Socket >> 4;
-				State = SPIdata & 0x0F;
-				setPinState(PORT_D, Socket + 1, State);
-				printStringCRNL("Command received: ");
-				printHexNumber(SPIdata, 1);
+	{	
+		if(SwitchPressedFlag){
+			SwitchPressedFlag = false;
+			if(Radio.isTXFull())
+			Radio.flushTX();
+			if(Radio.isTX_DS_Set())
+			Radio.clearTX_DS();
+			#ifdef STATS
+			printStringCRNL("Switch Pressed: ");
+			#endif
+			printNumber(SwitchID);
+			Radio.fastTransferPayload(SwitchID);
+			Timer1.setCallBackTime(25, 0, timerDone);
+			while(!TimeOut && !Radio.isTX_DS_Set()){
+				
+			}
+			if(TimeOut){
+				TimeOut = false;
 			}
 			else{
-				enableSPIInterrupt(false);
-				SPI_MasterInit();
-				printHexNumber(Radio.readSPIRegister(0x17,1),1);
-				printStringCRNL("T");
-				initSPISlave();
-				enableSPIInterrupt(true);
+				LED = 1;
+				Timer1.setCallBackTime(200, 0, timerDone);
+				printStringCRNL("Payload transmitted.");
+				Radio.clearTX_DS();
 			}
-		}
-		enableSPIInterrupt(false);
-		SPI_MasterInit();
-		if(Timer1_Flag){
-			Timer1_Flag = false;
-			enableSPIInterrupt(false);
-			SPI_MasterInit();
+			#ifdef STATS
 			Radio.printInfo();
+			#endif
+			if(sleepAllowed()){
+				set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+				sleep_enable();
+				sei();
+				getReadyToSleep();
+				#ifdef STATS
+				printStringCRNL("Sleeping...");
+				#endif
+				//FLASH = 0;
+				sleep_mode();
+			}
 		}
 	}
 }
 
-void printSomething(uint8_t Timer_ID){
-	Timer1_Flag = true;
+void switchPressed(uint8_t Switch_ID){
+	#ifdef DEBUG_MAIN
+	printStringCRNL("press");
+	#endif
+	SwitchPressedFlag = true;
+	SwitchID = Switch_ID;
+}
+
+void timerDone(uint8_t Timer_ID){
+	#ifdef DEBUG_MAIN
+	printStringCRNL("Timer done.");
+	#endif
+	 TimeOut = true;
+	 LED = 0;
 }
 
 void portStateChange(uint8_t PortNo){
@@ -88,26 +117,11 @@ void portStateChange(uint8_t PortNo){
 void runSetup(){
 	
 	USART_Init(MYUBRR);
-	Init_CTC_T1(2,2000);
-	setPinDirection(PORT_C, 2, OUTPUT);
-	setPinDirection(PORT_D, 2, OUTPUT);
-	setPinDirection(PORT_D, 3, OUTPUT);
-	setPinDirection(PORT_D, 4, INPUT);
-	setPinDirection(PORT_D, 5, OUTPUT);
-	setPinState(PORT_D, 2, LOW);
-	setPinState(PORT_D, 3, LOW);
-	setPinState(PORT_D, 4, LOW);
-	setPinState(PORT_D, 5, LOW);
-	setPinState(PORT_C, 2, LOW);
-	setPinDirection(PORT_C, 0, INPUT);
+	Init_CTC_T1(2,1000);
 	SPI_MasterInit();
+	setPinDirection(PORT_D, 2, 1);
 	//enableSPIInterrupt(true);
 	//sei();
 }
 
-ISR(SPI_STC_vect)
-{															//Grab the data byte from the SPI Data Register (SPDR)
-	SPIdata = SPDR;                                         //Put the byte into a temporary variable for processin                                       //process the data byte and put it back into the SPDR for the Master to read it
-	newSPIData = true;                                       //Set the Flag as TRUE
-}
 

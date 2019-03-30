@@ -12,10 +12,12 @@
 //#define F_CPU 8000000L
 #include <inttypes.h>
 #define NO_MILLIS
+//#define DEBUG_TIMER
 //#define  DEBUG_SWITCH
+//#define  DEBUG
 #define STATS
 #define INDICATE_LED	GET_BITFIELD(PORTD).bit7
-
+#define LED				GET_BITFIELD(PORTD).bit2
 #define LINK_LED		GET_BITFIELD(PORTD).bit7
 #define LINK_LED_D		GET_BITFIELD(DDRD).bit7
 
