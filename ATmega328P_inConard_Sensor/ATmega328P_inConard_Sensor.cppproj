@@ -154,7 +154,54 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\Nero-Library\Device\ATmega328P.cpp">
+      <SubType>compile</SubType>
+      <Link>ATmega328P.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\Device\ATmega328P.h">
+      <SubType>compile</SubType>
+      <Link>ATmega328P.h</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\General\AVR.h">
+      <SubType>compile</SubType>
+      <Link>AVR.h</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\General\Essential.cpp">
+      <SubType>compile</SubType>
+      <Link>Essential.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\General\Essential.h">
+      <SubType>compile</SubType>
+      <Link>Essential.h</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\General\NRF24L01.cpp">
+      <SubType>compile</SubType>
+      <Link>NRF24L01.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\General\NRF24L01.h">
+      <SubType>compile</SubType>
+      <Link>NRF24L01.h</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\General\Switch.cpp">
+      <SubType>compile</SubType>
+      <Link>Switch.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\General\Switch.h">
+      <SubType>compile</SubType>
+      <Link>Switch.h</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\General\Timer.cpp">
+      <SubType>compile</SubType>
+      <Link>Timer.cpp</Link>
+    </Compile>
+    <Compile Include="..\..\Nero-Library\General\Timer.h">
+      <SubType>compile</SubType>
+      <Link>Timer.h</Link>
+    </Compile>
     <Compile Include="main.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ProjectDef.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>
