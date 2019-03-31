@@ -23,7 +23,8 @@ void timerDone(uint8_t Timer_ID);
 volatile uint8_t SPIdata, SwitchID;
 volatile bool SwitchPressedFlag, TimeOut;
 uint8_t Socket, State;
-TimerClass Timer1;
+TimerClass Timer1, Timer2;
+SwitchClass S1, S2, S3, S4, S5, S6;
 int main(void)
 {
 	runSetup();
@@ -32,25 +33,28 @@ int main(void)
 	sei();
 	TimeOut = false;
 	NRF24L01 Radio(1,1,0);
-	SwitchClass S1, S2, S3, S4, S5, S6;
 	Timer1.begin();
+	Timer1.initializeTimer();
+	Timer2.initializeTimer();
+	Timer1.setCallBackTime(100, 0, timerDone);
 	S1.begin();
-	S1.initializeSwitch(PORT_B, 1, &S1);
-	S2.initializeSwitch(PORT_B, 0, &S2);
-	S3.initializeSwitch(PORT_B, 6, &S3);
+	S1.initializeSwitch(PORT_B, 0, &S1); //1
+	S2.initializeSwitch(PORT_B, 6, &S2); //0
+	S3.initializeSwitch(PORT_B, 1, &S3); //6
 	S4.initializeSwitch(PORT_B, 7, &S4);
 	S5.initializeSwitch(PORT_D, 6, &S5);
 	S6.initializeSwitch(PORT_D, 7, &S6);
 	S1.shortPress(switchPressed);
 	S1.enableSamePtrMode(true);
-	Timer1.initializeTimer();
-	Timer1.setCallBackTime(100, 0, timerDone);
 	Notify(PSTR("Done"));
 	allowSleep(true);
 	while (1)
 	{	
 		if(SwitchPressedFlag){
 			SwitchPressedFlag = false;
+			//if(Radio.is)
+			if(Radio.isRT_Max_Set())
+			Radio.clearRT_Max();
 			if(Radio.isTXFull())
 			Radio.flushTX();
 			if(Radio.isTX_DS_Set())
@@ -60,18 +64,21 @@ int main(void)
 			#endif
 			printNumber(SwitchID);
 			Radio.fastTransferPayload(SwitchID);
-			Timer1.setCallBackTime(25, 0, timerDone);
-			while(!TimeOut && !Radio.isTX_DS_Set()){
+			TimeOut = false;
+			Timer2.setCallBackTime(50, 0, timerDone);
+			while(Radio.isTX_DS_Set() != 0x20 && !TimeOut){
 				
 			}
-			if(TimeOut){
-				TimeOut = false;
-			}
-			else{
+			if(Radio.isTX_DS_Set() == 0x20){
 				LED = 1;
 				Timer1.setCallBackTime(200, 0, timerDone);
 				printStringCRNL("Payload transmitted.");
 				Radio.clearTX_DS();
+				//Radio.flushTX();
+			}
+			else{
+				TimeOut = false;
+				printStringCRNL("Timed out");
 			}
 			#ifdef STATS
 			Radio.printInfo();
@@ -97,6 +104,7 @@ void switchPressed(uint8_t Switch_ID){
 	#endif
 	SwitchPressedFlag = true;
 	SwitchID = Switch_ID;
+	allowSleep(true);
 }
 
 void timerDone(uint8_t Timer_ID){
@@ -105,6 +113,7 @@ void timerDone(uint8_t Timer_ID){
 	#endif
 	 TimeOut = true;
 	 LED = 0;
+	 allowSleep(true);
 }
 
 void portStateChange(uint8_t PortNo){
