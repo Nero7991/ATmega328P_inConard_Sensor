@@ -15,6 +15,8 @@
 //#define DEBUG_TIMER
 //#define  DEBUG_SWITCH
 //#define  DEBUG
+#define SENSOR_ID		0x01
+#define IS_SENSOR
 #define STATS
 #define INDICATE_LED	GET_BITFIELD(PORTD).bit7
 #define LED				GET_BITFIELD(PORTD).bit2

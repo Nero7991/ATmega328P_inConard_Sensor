@@ -25,6 +25,8 @@ volatile bool SwitchPressedFlag, TimeOut;
 uint8_t Socket, State;
 TimerClass Timer1, Timer2;
 SwitchClass S1, S2, S3, S4, S5, S6;
+
+
 int main(void)
 {
 	runSetup();
@@ -48,22 +50,30 @@ int main(void)
 	S1.enableSamePtrMode(true);
 	Notify(PSTR("Done"));
 	allowSleep(true);
+	if(Radio.isRT_Max_Set())
+	Radio.clearRT_Max();
+	if(Radio.isTXFull())
+	Radio.flushTX();
+	if(Radio.isTX_DS_Set())
+	Radio.clearTX_DS();
 	while (1)
 	{	
 		if(SwitchPressedFlag){
 			SwitchPressedFlag = false;
-			//if(Radio.is)
-			if(Radio.isRT_Max_Set())
-			Radio.clearRT_Max();
-			if(Radio.isTXFull())
-			Radio.flushTX();
-			if(Radio.isTX_DS_Set())
-			Radio.clearTX_DS();
 			#ifdef STATS
 			printStringCRNL("Switch Pressed: ");
-			#endif
 			printNumber(SwitchID);
-			Radio.fastTransferPayload(SwitchID);
+			#endif
+			if(SwitchID < 4){
+				Radio.fastTransferPayload(SwitchID + 1);
+			}
+			else
+			{
+				if(SwitchID == 0x05)
+				Radio.fastTransferPayload(0xD1);
+				else
+				Radio.fastTransferPayload(0xD0);
+			}
 			TimeOut = false;
 			Timer2.setCallBackTime(50, 0, timerDone);
 			while(Radio.isTX_DS_Set() != 0x20 && !TimeOut){
@@ -71,40 +81,51 @@ int main(void)
 			}
 			if(Radio.isTX_DS_Set() == 0x20){
 				LED = 1;
-				Timer1.setCallBackTime(200, 0, timerDone);
-				printStringCRNL("Payload transmitted.");
 				Radio.clearTX_DS();
+				Timer1.setCallBackTime(200, 0, timerDone);
+				Timer2.resetCallbackTimer();
+				#ifdef STATS
+				printStringCRNL("Payload transmitted.");
+				#endif
 				//Radio.flushTX();
 			}
 			else{
 				TimeOut = false;
+				//Radio.flushTX();
+				#ifdef STATS
 				printStringCRNL("Timed out");
+				#endif
 			}
+			if(Radio.isRT_Max_Set())
+			Radio.clearRT_Max();
+			if(Radio.isTXFull())
+			Radio.flushTX();
+			if(Radio.isTX_DS_Set())
+			Radio.clearTX_DS();
 			#ifdef STATS
 			Radio.printInfo();
 			#endif
-			if(sleepAllowed()){
-				set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-				sleep_enable();
-				sei();
-				getReadyToSleep();
-				#ifdef STATS
-				printStringCRNL("Sleeping...");
-				#endif
-				//FLASH = 0;
-				sleep_mode();
-			}
+		}
+		if(sleepAllowed()){
+			#ifdef STATS
+			printStringCRNL("Sleeping...");
+			#endif
+			set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+			sleep_enable();
+			sei();
+			getReadyToSleep();
+			CE = 0;
+			sleep_mode();
+			CE = 1;
+			_delay_ms(20);
 		}
 	}
 }
 
 void switchPressed(uint8_t Switch_ID){
-	#ifdef DEBUG_MAIN
-	printStringCRNL("press");
-	#endif
 	SwitchPressedFlag = true;
 	SwitchID = Switch_ID;
-	allowSleep(true);
+	allowSleep(false);
 }
 
 void timerDone(uint8_t Timer_ID){
@@ -113,7 +134,7 @@ void timerDone(uint8_t Timer_ID){
 	#endif
 	 TimeOut = true;
 	 LED = 0;
-	 allowSleep(true);
+	 allowSleep(1);
 }
 
 void portStateChange(uint8_t PortNo){
@@ -125,12 +146,14 @@ void portStateChange(uint8_t PortNo){
 
 void runSetup(){
 	
-	USART_Init(MYUBRR);
+	//USART_Init(MYUBRR);
 	Init_CTC_T1(2,1000);
 	SPI_MasterInit();
 	setPinDirection(PORT_D, 2, 1);
 	//enableSPIInterrupt(true);
 	//sei();
 }
+
+
 
 
