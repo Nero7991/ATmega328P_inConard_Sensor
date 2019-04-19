@@ -12,14 +12,24 @@
 //#define F_CPU 8000000L
 #include <inttypes.h>
 #define NO_MILLIS
+#define STATS
 //#define DEBUG_TIMER
 //#define  DEBUG_SWITCH
-//#define  DEBUG
-#define SENSOR_ID		0x01
+//#define  DEBUG	
+
 #define IS_SENSOR
-#define STATS
+#define SENSOR_ID		0x01
+#define SENSOR_TYPE		0X01
+#define SENSOR_POWER	GET_BITFIELD(PORTB).bit6
+#define SENSOR_POWER_D	GET_BITFIELD(DDRB).bit6
+#define SENSOR_OUT		GET_BITFIELD(PORTB).bit0
+#define SENSOR_OUT_D	GET_BITFIELD(DDRB).bit0
+
 #define INDICATE_LED	GET_BITFIELD(PORTD).bit7
+
 #define LED				GET_BITFIELD(PORTD).bit2
+#define LED_D			GET_BITFIELD(DDRD).bit2
+
 #define LINK_LED		GET_BITFIELD(PORTD).bit7
 #define LINK_LED_D		GET_BITFIELD(DDRD).bit7
 
